@@ -19,6 +19,7 @@ export interface NetworkGroupsProps {
     readonly azNames: any;
     readonly privateSubnets: string[];
     readonly publicSubnets: string[];
+    readonly natSubnets: string[];
     readonly enableNatGateway?: boolean;
     readonly singleNatGateway?: boolean;
 }
@@ -28,10 +29,11 @@ export class NetworkGroups extends Resource {
     public readonly azureNetwork: VirtualNetwork;
     public readonly azurePrivateSubnet: SubnetA | undefined;
     public readonly azurePublicSubnet: SubnetA | undefined;
+    public readonly azureNatSubnet: SubnetA | undefined;
     public readonly azureNatPublicIp: PublicIp | undefined;
     public readonly azureNatPublicIpPrefix: PublicIpPrefix | undefined;
     public readonly azureNatGateway: NatGatewayA | undefined;
-    public readonly azurePrivateSubnetNatGateway: SubnetNatGatewayAssociation | undefined;
+    public readonly azureNatSubnetNatGateway: SubnetNatGatewayAssociation | undefined;
     public readonly azureNatGatewayIpAssociation: NatGatewayPublicIpAssociation | undefined;
 
     constructor(scope: Construct, name: string, props: NetworkGroupsProps ) {
@@ -64,38 +66,6 @@ export class NetworkGroups extends Resource {
 
         // Create Azure Private Subnet
         if (props.privateSubnets) {
-
-            // Enable Azure NAT Gateway
-            if (props.enableNatGateway) {
-                this.azureNatPublicIp = new PublicIp(this, 'AzureNatIp', {
-                    name: props.name + '-nat-ip' ?? "cdktf-nat-ip",
-                    location: props.region[0] ?? "eastus",
-                    resourceGroupName: props.resourceGroup.name,
-                    allocationMethod: 'Static'
-                });
-                this.azureNatPublicIpPrefix = new PublicIpPrefix(this, 'AzureNatIpPrefix', {
-                    name: props.name + '-nat-ip-prefix',
-                    location: props.region[0] ?? "eastus",
-                    resourceGroupName: props.resourceGroup.name,          
-                });
-                this.azureNatGateway = new NatGatewayA(this, 'AzureNatGateway', {
-                    name: props.name + '-nat' ?? "cdktf-nat",
-                    location: props.region[0] ?? "eastus",
-                    resourceGroupName: props.resourceGroup.name,
-                    publicIpAddressIds: [this.azureNatPublicIp.id!],
-                    publicIpPrefixIds: [this.azureNatPublicIpPrefix.id!],
-                    dependsOn: [
-                        props.resourceGroup,
-                        this.azureNatPublicIp,
-                        this.azureNatPublicIpPrefix
-                    ]
-                });
-                this.azureNatGatewayIpAssociation = new NatGatewayPublicIpAssociation(this, 'AzureNatGatewayIpAssociation', {
-                    natGatewayId: this.azureNatGateway.id!,
-                    publicIpAddressId: this.azureNatPublicIp.id!,
-                });
-            }
-
             for (let subnet of props.privateSubnets) {
                 let r = crypto.createHash('sha1').update(subnet).digest('hex');
 
@@ -106,10 +76,56 @@ export class NetworkGroups extends Resource {
                     virtualNetworkName: this.azureNetwork.name,
                     dependsOn: [props.resourceGroup, this.azureNetwork]
                 });
+            }
+        }
+
+        // Create Azure NAT Subnet
+        if (props.natSubnets) {
+
+            // Enable Azure NAT Gateway
+            if (props.enableNatGateway) {
+                this.azureNatPublicIp = new PublicIp(this, 'AzureNatIp', {
+                    name: props.name + '-nat-ip' ?? "cdktf-nat-ip",
+                    location: props.region[0] ?? "eastus",
+                    resourceGroupName: props.resourceGroup.name,
+                    allocationMethod: 'Static'
+                });
+                // this.azureNatPublicIpPrefix = new PublicIpPrefix(this, 'AzureNatIpPrefix', {
+                //     name: props.name + '-nat-ip-prefix',
+                //     location: props.region[0] ?? "eastus",
+                //     resourceGroupName: props.resourceGroup.name,          
+                // });
+                this.azureNatGateway = new NatGatewayA(this, 'AzureNatGateway', {
+                    name: props.name + '-nat' ?? "cdktf-nat",
+                    location: props.region[0] ?? "eastus",
+                    resourceGroupName: props.resourceGroup.name,
+                    publicIpAddressIds: [this.azureNatPublicIp.id!],
+                    // publicIpPrefixIds: [this.azureNatPublicIpPrefix.id!],
+                    dependsOn: [
+                        props.resourceGroup,
+                        this.azureNatPublicIp
+                    ]
+                });
+                this.azureNatGatewayIpAssociation = new NatGatewayPublicIpAssociation(this, 'AzureNatGatewayIpAssociation', {
+                    natGatewayId: this.azureNatGateway.id!,
+                    publicIpAddressId: this.azureNatPublicIp.id!,
+                });
+            }
+
+            for (let subnet of props.natSubnets) {
+                let r = crypto.createHash('sha1').update(subnet).digest('hex');
+
+                this.azureNatSubnet = new SubnetA(this, 'AzureNatSubnet' + r, {
+                    addressPrefix: subnet,
+                    name: 'nat-' + r,
+                    resourceGroupName: props.resourceGroup.name,
+                    virtualNetworkName: this.azureNetwork.name,
+                    dependsOn: [props.resourceGroup, this.azureNetwork]
+                });
 
                 if (props.enableNatGateway) {
-                    this.azurePrivateSubnetNatGateway = new SubnetNatGatewayAssociation(this, 'AzurePrivateSubnetNatGateway' + r, {
-                        subnetId: this.azurePrivateSubnet.id!,
+                    this.azureNatSubnetNatGateway = new SubnetNatGatewayAssociation(this, 'AzureNatSubnetNatGateway' + r, {
+                        subnetId: this.azureNatSubnet.id!,
                         natGatewayId: this.azureNatGateway!.id!,
                     });
                 }

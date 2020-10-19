@@ -25,25 +25,19 @@ export class KubernetesGroups extends Resource {
     constructor(scope: Construct, name: string, props: KubernetesGroupsProps ) {
         super(scope, name);
 
-        // const azureKubernetesServicePrincipal: KubernetesClusterServicePrincipal = {
-        //     clientId: process.env.AZ_SP_CLIENT_ID as string,
-        //     clientSecret: process.env.AZ_SP_CLIENT_SECRET as string
-        // }
-
+        const identity: KubernetesClusterIdentity = { type: 'SystemAssigned'}
         const azureKubernetesPool: KubernetesClusterDefaultNodePool = {
             name: props.clusterName + 'default',
             vmSize: props.instanceType[0] ?? "Standard_D2_v2",
             nodeCount: props.instanceCount[0] ?? 1,
         }
-
-        const identity = new KubernetesClusterIdentity{'SystemAssigned'}
-
+        
         this.azureKubernetesCluster = new KubernetesCluster(this, 'AzureKubernetesCluster', {
             name: props.clusterName,
             location: props.region[0],
             resourceGroupName: props.resourceGroup.name,
             kubernetesVersion: props.version[0],
-            identity: [KubernetesClusterIdentity],
+            identity: [identity],
             // servicePrincipal: [azureKubernetesServicePrincipal],
             dnsPrefix: props.dnsPrefix ?? "cdktf-kubernetes",
             defaultNodePool: [azureKubernetesPool],
