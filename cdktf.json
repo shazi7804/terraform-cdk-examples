@@ -7,6 +7,7 @@
   ],
   "terraformModules": [
     "terraform-aws-modules/vpc/aws",
+    "terraform-aws-modules/eks/aws",
     "Azure/network/azurerm"
   ]
 }
