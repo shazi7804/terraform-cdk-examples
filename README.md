@@ -37,8 +37,6 @@ $ cdktf --version
 
 You can refer [config/default.json](https://github.com/shazi7804/cdktf-samples/blob/master/config/default.json) to define environment variables.
 
-#### For example 
-
 - Customize common tags for all resources.
 
 ```json
