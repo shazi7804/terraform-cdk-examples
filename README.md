@@ -1,4 +1,4 @@
-## CDK on Terraform Deploy Multi Cloud samples
+## CDK on Terraform Deploy Multiple Cloud samples
 
 
 ## Table of contents
