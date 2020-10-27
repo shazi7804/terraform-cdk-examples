@@ -35,6 +35,83 @@ $ cdktf --version
 
 ###  Step 2. Define your environment variables
 
+You can refer [config/default.json](https://github.com/shazi7804/cdktf-samples/blob/master/config/default.json) to define environment variables.
+
+#### For example 
+
+- Customize common tags for all resources.
+
+```json
+{
+    "Tags": {
+        "CreateBy": "cdktf",
+        "Owner": "<your-name>"
+    }
+}
+```
+
+- Customize network subnet with multiple cloud.
+
+```json
+{
+    "Providers": {
+        "Aws": {
+            "Regions": ["us-east-1"],
+            "Vpc": {
+                "cidr": "10.0.0.0/16",
+                "privateSubnets": [
+                    "10.0.0.0/21",
+                    "10.0.8.0/21"
+                ],
+                "publicSubnets": [
+                    "10.0.16.0/21",
+                    "10.0.24.0/21"
+                ],
+        "Azure": {
+            "Regions": ["eastus"],
+            "Network": {
+                "cidr": "10.0.0.0/16",
+                "privateSubnets": [
+                    "10.0.0.0/21",
+                    "10.0.8.0/21"
+                ],
+                "publicSubnets": [
+                    "10.0.16.0/21",
+                    "10.0.24.0/21"
+                ]
+            }
+        }
+    }
+}
+```
+
+- Customize kubernetes with multiple cloud.
+
+
+```json
+{
+    "Providers": {
+        "Aws": {
+            "Eks": {
+                "name": "cdktf",
+                "instanceType": ["m4.large"],
+                "instanceCount": 1,
+                "version": "1.18"
+            }
+        },
+        "Azure": {
+            "Aks": {
+                "name": "cdktf",
+                "instanceType": ["Standard_D2_v2"],
+                "instanceCount": 1,
+                "dnsPrefix": "cdktf-kubernetes",
+                "version": "1.17.11"
+            }
+        }
+    }
+}
+```
+
 ###  Step 3. Create an execution plan
 
 ```bash
