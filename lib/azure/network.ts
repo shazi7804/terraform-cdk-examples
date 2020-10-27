@@ -18,9 +18,11 @@ export interface AzureNetworkProps {
     readonly azNames: any;
     readonly privateSubnets: string[];
     readonly publicSubnets: string[];
+    readonly infraSubnets: string[];
     readonly natSubnets: string[];
     readonly enableNatGateway?: boolean;
     readonly singleNatGateway?: boolean;
+    readonly tags?: any;
 }
 
 export class AzureNetwork extends Resource {
@@ -28,7 +30,11 @@ export class AzureNetwork extends Resource {
     public readonly azurePrivateSubnet: SubnetA | undefined;
     public readonly azurePrivateSubnetIds: any;
     public readonly azurePublicSubnet: SubnetA | undefined;
+    public readonly azurePublicSubnetIds: any;
+    public readonly azureInfraSubnet: SubnetA | undefined;
+    public readonly azureInfraSubnetIds: any;
     public readonly azureNatSubnet: SubnetA | undefined;
+    public readonly azureNatSubnetIds: any;
     public readonly azureNatPublicIp: PublicIp | undefined;
     public readonly azureNatPublicIpPrefix: PublicIpPrefix | undefined;
     public readonly azureNatGateway: NatGatewayA | undefined;
@@ -70,7 +76,6 @@ export class AzureNetwork extends Resource {
 
         // Create Azure NAT Subnet
         if (props.natSubnets) {
-
             // Enable Azure NAT Gateway
             if (props.enableNatGateway) {
                 this.azureNatPublicIp = new PublicIp(this, 'AzureNatIp', {
@@ -81,7 +86,6 @@ export class AzureNetwork extends Resource {
                     sku: 'Standard',
                     dependsOn: [props.resourceGroup]
                 });
-
                 this.azureNatGateway = new NatGatewayA(this, 'AzureNatGateway', {
                     name: props.name + '-nat' ?? "cdktf-nat",
                     location: props.region ?? "eastus",
@@ -112,6 +116,9 @@ export class AzureNetwork extends Resource {
                         natGatewayId: this.azureNatGateway!.id!,
                     });
                 }
+
+                var azureNatSubnets = [];
+                this.azureNatSubnetIds = azureNatSubnets.push(this.azureNatSubnet.id);
             }
         }
 
@@ -126,6 +133,26 @@ export class AzureNetwork extends Resource {
                     virtualNetworkName: this.azureNetwork.name,
                     dependsOn: [props.resourceGroup, this.azureNetwork]
                 });
+
+                var azurePublicSubnets = [];
+                this.azurePublicSubnetIds = azurePublicSubnets.push(this.azurePublicSubnet.id);
+            }
+        }
+
+        if (props.infraSubnets) {
+            for (let subnet of props.infraSubnets) {
+                let r = crypto.createHash('sha1').update(subnet).digest('hex');
+
+                this.azureInfraSubnet = new SubnetA(this, 'AzureInfraSubnet' + r, {
+                    addressPrefix: subnet,
+                    name: 'infra-' + r,
+                    resourceGroupName: props.resourceGroup.name,
+                    virtualNetworkName: this.azureNetwork.name,
+                    dependsOn: [props.resourceGroup, this.azureNetwork]
+                });
+
+                var azureInfraSubnets = [];
+                this.azureInfraSubnetIds = azureInfraSubnets.push(this.azureInfraSubnet.id);
             }
         }
 

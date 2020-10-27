@@ -1,12 +1,10 @@
 import { Construct } from 'constructs';
 import { App, TerraformStack } from 'cdktf';
-// AWS import
 import { AwsProvider, DataAwsAvailabilityZones } from './.gen/providers/aws';
 import { AwsVpc, AwsEksGroups } from './lib/aws';
-// Azure import
 import { AzurermProvider, ResourceGroup } from './.gen/providers/azurerm';
 import { AzureNetwork, AzureAksGroups } from './lib/azure';
-
+import './.gen/providers/random';
 
 ///////////////////////////////////////////////////////////////////
 ///////////////            Parameters         /////////////////////
@@ -20,9 +18,10 @@ const tags = {
 };
 
 // Network
-const cidr: string = '10.0.0.0/16';
-const privateSubnets: string[] = ["10.0.0.0/21", "10.0.8.0/21"];
-const publicSubnets: string[] = ["10.0.16.0/21", "10.0.24.0/21"];
+const cidr = '10.0.0.0/16';
+const privateSubnets = ["10.0.0.0/21", "10.0.8.0/21"];
+const publicSubnets = ["10.0.16.0/21", "10.0.24.0/21"];
+const infraSubnets = ["10.0.32.0/21", "10.0.40.0/21"];
 const natSubnets: string[] = ["10.0.254.0/27"]; // Only for Azure
 const enableNatGateway: boolean = true;
 const singleNatGateway: boolean = true;
@@ -69,12 +68,12 @@ class MyStack extends TerraformStack {
             name: stack_name,
             region: region[1],
             cidr,
-            azNames: azs.names,
+            azs,
             privateSubnets,
             publicSubnets,
-            natSubnets,
+            infraSubnets,
             enableNatGateway,
-            singleNatGateway,
+            // singleNatGateway,
             eksClusterName: kubernetesName,
             tags,
         });
@@ -87,21 +86,24 @@ class MyStack extends TerraformStack {
             azNames: azs.names,
             privateSubnets,
             publicSubnets,
+            infraSubnets,
             natSubnets,
             enableNatGateway,
-            singleNatGateway
+            singleNatGateway,
+            tags,
         });
 
         ///////////////////////////////////////////////////////////////////
         //////////////////        Kubernetes        ///////////////////////
+        
         new AwsEksGroups(this, 'awsEksGroups', {
             name: stack_name,
             clusterName: kubernetesName,
             version: kubernetesVersion[1],
             instanceType: kubernetesInstanceType[1],
             instanceCount: kubernetesInstanceCount[1],
-            subnetIds: awsVpc.awsVpc.privateSubnetsOutput,
-            vpc: awsVpc.awsVpc.vpcIdOutput,
+            subnetIds: awsVpc.privateSubnetIds,
+            vpc: awsVpc.vpcId,
             tags,
         });
 
@@ -116,12 +118,10 @@ class MyStack extends TerraformStack {
             dnsPrefix: kubernetesDnsPrefix,
             azureNetwork: azureNetwork.azureNetwork,
             azurePrivateSubnetIds: azureNetwork.azurePrivateSubnetIds,
+            tags,
         });
-
-       
     }
 }
-
 
 const app = new App();
 new MyStack(app, 'cdktf');

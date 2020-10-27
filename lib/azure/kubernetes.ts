@@ -4,9 +4,11 @@ import {
     KubernetesCluster,
     // KubernetesClusterConfig,
     // KubernetesClusterServicePrincipal,
+    KubernetesClusterRoleBasedAccessControl,
     KubernetesClusterIdentity,
     KubernetesClusterNetworkProfile,
-    // KubernetesClusterAddonProfileKubeDashboard,
+    KubernetesClusterAddonProfile,
+    KubernetesClusterAddonProfileKubeDashboard,
     KubernetesClusterDefaultNodePool } from '../../.gen/providers/azurerm'
 
 export interface AzureAksGroupsProps {
@@ -20,6 +22,7 @@ export interface AzureAksGroupsProps {
     readonly version: string;
     readonly azureNetwork: any;
     readonly azurePrivateSubnetIds: any;
+    readonly tags: any;
 }
 
 export class AzureAksGroups extends Resource {
@@ -29,8 +32,15 @@ export class AzureAksGroups extends Resource {
         super(scope, name);
 
         const azureKubernetesIdentity: KubernetesClusterIdentity = { type: 'SystemAssigned'}
+        const azureKubernetesRbac: KubernetesClusterRoleBasedAccessControl = { enabled: true }
         
-        const azureKubernetesPool: KubernetesClusterDefaultNodePool = {
+        // Addon Profile
+        const azureKubernetesAddonProfileKubeDashboard: KubernetesClusterAddonProfileKubeDashboard = { enabled: true } 
+        const azureKubernetesAddonProfile: KubernetesClusterAddonProfile = {
+            kubeDashboard: [azureKubernetesAddonProfileKubeDashboard]
+        }
+
+        const azureKubernetesDefaultPool: KubernetesClusterDefaultNodePool = {
             name: props.clusterName + 'default',
             vmSize: props.instanceType ?? "Standard_D2_v2",
             nodeCount: props.instanceCount ?? 1,
@@ -52,9 +62,11 @@ export class AzureAksGroups extends Resource {
             networkProfile: [azureKubernetesNetworkProfile],
             kubernetesVersion: props.version,
             identity: [azureKubernetesIdentity],
+            roleBasedAccessControl: [azureKubernetesRbac],
+            addonProfile: [azureKubernetesAddonProfile],
             dnsPrefix: props.dnsPrefix ?? "cdktf-kubernetes",
-            defaultNodePool: [azureKubernetesPool],
-            dependsOn: [props.resourceGroup.name, azureKubernetesPool],
+            defaultNodePool: [azureKubernetesDefaultPool],
+            dependsOn: [props.resourceGroup.name, azureKubernetesDefaultPool, props.azureNetwork],
         });
 
         new TerraformOutput(this, 'AzureAksId', { value: this.azureKubernetesCluster.id })

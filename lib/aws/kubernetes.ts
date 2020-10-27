@@ -11,9 +11,9 @@ export interface AwsEksGroupsProps {
     readonly nodeGroupDefaultAmi?: string;
     readonly nodeGroupDefaultDiskSize?: number;
     readonly version: string;
-    readonly vpc:string;
+    readonly vpc: string;
     readonly subnetIds: any;
-    readonly tags: any;
+    readonly tags?: any;
 }
 
 export class AwsEksGroups extends Resource {
@@ -21,11 +21,6 @@ export class AwsEksGroups extends Resource {
 
     constructor(scope: Construct, name: string, props: AwsEksGroupsProps ) {
         super(scope, name);
-
-        var tags: any = {};
-
-        if (props.tags)
-            tags = {...tags, ...props.tags}
 
         const nodeGroupDefault = {
             ami_type: props.nodeGroupDefaultAmi ?? "AL2_x86_64",
@@ -53,7 +48,7 @@ export class AwsEksGroups extends Resource {
             nodeGroupsDefaults: nodeGroupDefault,
             nodeGroups: props.nodeGroups ?? nodeGroups,
             manageAwsAuth: "false",
-            tags,
+            tags: props.tags,
         });
 
         new TerraformOutput(this, 'AwsEksArn', { value: this.awsKubernetesCluster.clusterArnOutput })
