@@ -1,4 +1,4 @@
-.PHONY: deploy
+.PHONY: plan
 
 deploy:
 	cdktf synth
