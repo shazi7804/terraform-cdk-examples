@@ -122,6 +122,8 @@ $ cdktf plan
 $ cdktf deploy
 ```
 
+If you like the style of [terraform](https://www.terraform.io/) output, you can execute `make plan && make deploy`. more detail reference [Makefile](https://github.com/shazi7804/cdktf-samples/blob/master/Makefile)
+
 ## Parameters
 
 You can customize environment parameters in [config/default.json](https://github.com/shazi7804/cdktf-samples/blob/master/config/default.json)
