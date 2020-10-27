@@ -130,4 +130,4 @@ Parameters | Description
 ---------- | -----------
 StackName | The parameter of this stack name. default is `cdktf`
 Tags | The parameter of this stack common tags. default is `{ "CreateBy": "cdktf", "SampleFrom": "https://github.com/shazi7804" }`
-Providers | The parameter of providers of this stack. type of 
+Providers | The parameter of providers of this stack.
