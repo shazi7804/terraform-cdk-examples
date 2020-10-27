@@ -1,0 +1,61 @@
+{
+    "StackName": "cdktf",
+    "Tags": {
+        "CreateBy": "cdktf",
+        "SampleFrom": "https://github.com/shazi7804"
+    },
+    "Providers": {
+        "Aws": {
+            "Regions": ["us-east-1"],
+            "Vpc": {
+                "cidr": "10.0.0.0/16",
+                "privateSubnets": [
+                    "10.0.0.0/21",
+                    "10.0.8.0/21"
+                ],
+                "publicSubnets": [
+                    "10.0.16.0/21",
+                    "10.0.24.0/21"
+                ],
+                "infraSubnets": [
+                    "10.0.32.0/21",
+                    "10.0.40.0/21"
+                ],
+                "enableNatGateway": true
+            },
+            "Eks": {
+                "name": "cdktf",
+                "instanceType": ["m4.large"],
+                "instanceCount": 1,
+                "version": "1.18"
+            }
+        },
+        "Azure": {
+            "Regions": ["eastus"],
+            "Network": {
+                "cidr": "10.0.0.0/16",
+                "privateSubnets": [
+                    "10.0.0.0/21",
+                    "10.0.8.0/21"
+                ],
+                "publicSubnets": [
+                    "10.0.16.0/21",
+                    "10.0.24.0/21"
+                ],
+                "infraSubnets": [
+                    "10.0.32.0/21",
+                    "10.0.40.0/21"
+                ],
+                "natSubnets": ["10.0.254.0/27"],
+                "enableNatGateway": true
+            },
+            "Aks": {
+                "name": "cdktf",
+                "instanceType": ["Standard_D2_v2"],
+                "instanceCount": 1,
+                "dnsPrefix": "cdktf-kubernetes",
+                "version": "1.17.11"
+            }
+        }
+    }
+}

@@ -4,39 +4,13 @@ import { AwsProvider, DataAwsAvailabilityZones } from './.gen/providers/aws';
 import { AwsVpc, AwsEksGroups } from './lib/aws';
 import { AzurermProvider, ResourceGroup } from './.gen/providers/azurerm';
 import { AzureNetwork, AzureAksGroups } from './lib/azure';
-import './.gen/providers/random';
 
-///////////////////////////////////////////////////////////////////
-///////////////            Parameters         /////////////////////
-
-// General
-const stack_name: string = 'cdktf';
-const region: string[] = ['eastus', 'us-east-1'];
-const tags = {
-    "CreateBy": "cdktf",
-    "SampleFrom": "https://github.com/shazi7804"
-};
-
-// Network
-const cidr = '10.0.0.0/16';
-const privateSubnets = ["10.0.0.0/21", "10.0.8.0/21"];
-const publicSubnets = ["10.0.16.0/21", "10.0.24.0/21"];
-const infraSubnets = ["10.0.32.0/21", "10.0.40.0/21"];
-const natSubnets: string[] = ["10.0.254.0/27"]; // Only for Azure
-const enableNatGateway: boolean = true;
-const singleNatGateway: boolean = true;
-
-// Kubernetes
-const kubernetesName: string = 'cdktf';
-const kubernetesInstanceType: string[] = ['Standard_D2_v2', 'm4.large'];
-const kubernetesInstanceCount: number[] = [1, 1];
-const kubernetesDnsPrefix: string = 'cdktf-kubernetes';
-const kubernetesVersion: string[] = ['1.17.11', '1.18'];
-// const kubernetesPodCidr: string[] = ""
+const config = require('config');
+const stackName = config.get('StackName');
+const tags = config.get('Tags')
 
 ///////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////
-
 
 class MyStack extends TerraformStack {
     constructor(scope: Construct, name: string ) {
@@ -45,7 +19,7 @@ class MyStack extends TerraformStack {
         ///////////////////////////////////////////////////////////////////
         ///////////////       Genral Informations     /////////////////////
         const awsProvider = new AwsProvider(this, 'aws', {
-            region: process.env.AWS_REGION ?? process.env.AWS_DEFAULT_REGION ?? 'us-east-1',
+            region: config.get('Providers.Aws.Regions')[0],
         });
 
         const azs = new DataAwsAvailabilityZones(this, 'azs', {
@@ -58,38 +32,36 @@ class MyStack extends TerraformStack {
         });
 
         const resourceGroup = new ResourceGroup(this, 'resource_group', {
-            location: region[0],
-            name: stack_name,
+            location: config.get('Providers.Azure.Regions')[0],
+            name: stackName,
         });
 
         ///////////////////////////////////////////////////////////////////
         //////////////////         Network          ///////////////////////
         const awsVpc = new AwsVpc(this, 'awsVpc', {
-            name: stack_name,
-            region: region[1],
-            cidr,
+            name: stackName,
+            region: config.get('Providers.Aws.Regions')[0],
+            cidr: config.get('Providers.Aws.Vpc.cidr'),
             azs,
-            privateSubnets,
-            publicSubnets,
-            infraSubnets,
-            enableNatGateway,
-            // singleNatGateway,
-            eksClusterName: kubernetesName,
+            privateSubnets: config.get('Providers.Aws.Vpc.privateSubnets'),
+            publicSubnets: config.get('Providers.Aws.Vpc.publicSubnets'),
+            infraSubnets: config.get('Providers.Aws.Vpc.infraSubnets'),
+            enableNatGateway: config.get('Providers.Aws.Vpc.enableNatGateway'),
+            eksClusterName: config.get('Providers.Aws.Eks.name'),
             tags,
         });
 
         const azureNetwork = new AzureNetwork(this, 'azureNetwork', {
-            name: stack_name,
-            region: region[0],
+            name: stackName,
+            region: config.get('Providers.Azure.Regions')[0],
             resourceGroup,
-            cidr,
+            cidr: config.get('Providers.Azure.Network.cidr'),
             azNames: azs.names,
-            privateSubnets,
-            publicSubnets,
-            infraSubnets,
-            natSubnets,
-            enableNatGateway,
-            singleNatGateway,
+            privateSubnets: config.get('Providers.Azure.Network.privateSubnets'),
+            publicSubnets: config.get('Providers.Azure.Network.publicSubnets'),
+            infraSubnets: config.get('Providers.Azure.Network.infraSubnets'),
+            natSubnets: config.get('Providers.Azure.Network.natSubnets'),
+            enableNatGateway: config.get('Providers.Azure.Network.enableNatGateway'),
             tags,
         });
 
@@ -97,25 +69,25 @@ class MyStack extends TerraformStack {
         //////////////////        Kubernetes        ///////////////////////
         
         new AwsEksGroups(this, 'awsEksGroups', {
-            name: stack_name,
-            clusterName: kubernetesName,
-            version: kubernetesVersion[1],
-            instanceType: kubernetesInstanceType[1],
-            instanceCount: kubernetesInstanceCount[1],
+            name: stackName,
+            clusterName: config.get('Providers.Aws.Eks.name'),
+            version: config.get('Providers.Aws.Eks.version'),
+            instanceType: config.get('Providers.Aws.Eks.instanceType')[0],
+            instanceCount: config.get('Providers.Aws.Eks.instanceCount'),
             subnetIds: awsVpc.privateSubnetIds,
             vpc: awsVpc.vpcId,
             tags,
         });
 
         new AzureAksGroups(this, 'azureAksGroups', {
-            name: stack_name,
-            region: region[0],
+            name: stackName,
+            region: config.get('Providers.Azure.Regions')[0],
             resourceGroup,
-            clusterName: kubernetesName,
-            version: kubernetesVersion[0],
-            instanceType: kubernetesInstanceType[0],
-            instanceCount: kubernetesInstanceCount[0],
-            dnsPrefix: kubernetesDnsPrefix,
+            clusterName: config.get('Providers.Azure.Aks.name'),
+            version: config.get('Providers.Azure.Aks.version'),
+            instanceType: config.get('Providers.Azure.Aks.instanceType')[0],
+            instanceCount: config.get('Providers.Azure.Aks.instanceCount'),
+            dnsPrefix: config.get('Providers.Azure.Aks.dnsPrefix'),
             azureNetwork: azureNetwork.azureNetwork,
             azurePrivateSubnetIds: azureNetwork.azurePrivateSubnetIds,
             tags,
