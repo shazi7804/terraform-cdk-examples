@@ -22,7 +22,7 @@ export interface AzureNetworkProps {
     readonly natSubnets: string[];
     readonly enableNatGateway?: boolean;
     readonly singleNatGateway?: boolean;
-    readonly tags?: any;
+    readonly tags?: object;
 }
 
 export class AzureNetwork extends Resource {

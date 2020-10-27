@@ -2,7 +2,6 @@ import { Construct } from 'constructs';
 import { Resource, TerraformOutput } from 'cdktf';
 import {
     KubernetesCluster,
-    // KubernetesClusterConfig,
     // KubernetesClusterServicePrincipal,
     KubernetesClusterRoleBasedAccessControl,
     KubernetesClusterIdentity,
@@ -22,7 +21,7 @@ export interface AzureAksGroupsProps {
     readonly version: string;
     readonly azureNetwork: any;
     readonly azurePrivateSubnetIds: any;
-    readonly tags: any;
+    readonly tags: object;
 }
 
 export class AzureAksGroups extends Resource {

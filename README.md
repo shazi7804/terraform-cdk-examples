@@ -53,7 +53,6 @@ You can customize environment parameters in [config/default.json](https://github
 
 Parameters | Description
 ---------- | -----------
-ecr_repo | The parameter of ECR repository name of build stack. default is `sagemaker-scikit_bring_your_own`
-
-
-## Parameters
+StackName | The parameter of this stack name. default is `cdktf`
+Tags | The parameter of this stack common tags. default is `{ "CreateBy": "cdktf", "SampleFrom": "https://github.com/shazi7804" }`
+Providers | The parameter of providers of this stack. type of 

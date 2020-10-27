@@ -15,7 +15,7 @@ import * as crypto from "crypto";
 
 export interface AwsVpcProps {
     readonly name: string;
-    readonly region: any;
+    readonly region: string;
     readonly cidr: string;
     readonly cidrSecondary?: string;
     readonly enableDnsHostnames?: boolean;
@@ -26,7 +26,7 @@ export interface AwsVpcProps {
     readonly infraSubnets?: string[];
     readonly enableNatGateway?: boolean;
     readonly singleNatGateway?: boolean;
-    readonly tags?: any;
+    readonly tags?: object;
     readonly eksClusterName?: string;
 }
 
