@@ -18,7 +18,7 @@ export interface AzureNetworkProps {
     readonly azNames: any;
     readonly privateSubnets: string[];
     readonly publicSubnets: string[];
-    readonly infraSubnets: string[];
+    readonly isolatedSubnets: string[];
     readonly natSubnets: string[];
     readonly enableNatGateway?: boolean;
     readonly singleNatGateway?: boolean;
@@ -31,8 +31,8 @@ export class AzureNetwork extends Resource {
     public readonly azurePrivateSubnetIds: any;
     public readonly azurePublicSubnet: SubnetA | undefined;
     public readonly azurePublicSubnetIds: any;
-    public readonly azureInfraSubnet: SubnetA | undefined;
-    public readonly azureInfraSubnetIds: any;
+    public readonly azureIsolatedSubnet: SubnetA | undefined;
+    public readonly azureIsolatedSubnetIds: any;
     public readonly azureNatSubnet: SubnetA | undefined;
     public readonly azureNatSubnetIds: any;
     public readonly azureNatPublicIp: PublicIp | undefined;
@@ -139,20 +139,20 @@ export class AzureNetwork extends Resource {
             }
         }
 
-        if (props.infraSubnets) {
-            for (let subnet of props.infraSubnets) {
+        if (props.isolatedSubnets) {
+            for (let subnet of props.isolatedSubnets) {
                 let r = crypto.createHash('sha1').update(subnet).digest('hex');
 
-                this.azureInfraSubnet = new SubnetA(this, 'AzureInfraSubnet' + r, {
+                this.azureIsolatedSubnet = new SubnetA(this, 'AzureIsolatedSubnet' + r, {
                     addressPrefix: subnet,
-                    name: 'infra-' + r,
+                    name: 'isolated-' + r,
                     resourceGroupName: props.resourceGroup.name,
                     virtualNetworkName: this.azureNetwork.name,
                     dependsOn: [props.resourceGroup, this.azureNetwork]
                 });
 
-                var azureInfraSubnets = [];
-                this.azureInfraSubnetIds = azureInfraSubnets.push(this.azureInfraSubnet.id);
+                var azureIsolatedSubnets = [];
+                this.azureIsolatedSubnetIds = azureIsolatedSubnets.push(this.azureIsolatedSubnet.id);
             }
         }
 

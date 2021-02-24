@@ -7,3 +7,7 @@ deploy:
 plan:
 	cdktf synth
 	cd cdktf.out/ && terraform plan
+
+init:
+	cdktf synth
+	cd cdktf.out/ && terraform init

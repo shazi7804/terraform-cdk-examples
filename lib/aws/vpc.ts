@@ -23,7 +23,7 @@ export interface AwsVpcProps {
     readonly azs: any;
     readonly privateSubnets: string[];
     readonly publicSubnets: string[];
-    readonly infraSubnets?: string[];
+    readonly isolatedSubnets?: string[];
     readonly enableNatGateway?: boolean;
     readonly singleNatGateway?: boolean;
     readonly tags?: object;
@@ -37,42 +37,28 @@ export class AwsVpc extends Resource {
     public readonly awsInternetGateway: InternetGateway;
     public readonly awsNatGateway: NatGateway | undefined;
     public readonly awsNatEip: Eip | undefined;
+    public natGatewayIds: any;
     public awsPrivateSubnet: Subnet | undefined;
     public privateSubnetIds: any;
+    public readonly awsPrivateRouteTable: RouteTable[] | undefined;
     public awsPublicSubnet: Subnet | undefined;
     public publicSubnetIds: any;
-    public awsTransiSubnet: Subnet | undefined;
-    public transiSubnetIds: any;
-    public awsInfraSubnet: Subnet | undefined;
-    public infraSubnetIds: any;
     public readonly awsPublicRouteTable: RouteTable | undefined;
-    public readonly awsInfraRouteTable: RouteTable[] | undefined;
-    public readonly awsPrivateRouteTable: RouteTable[] | undefined;
+    public awsIsolatedSubnet: Subnet | undefined;
+    public isolatedSubnetIds: any;
+    public readonly awsIsolatedRouteTable: RouteTable[] | undefined;
+    
 
     constructor(scope: Construct, name: string, props: AwsVpcProps ) {
         super(scope, name);
 
         var tags = {
-            'Name': props.name,
+            'Name': props.name + '/Vpc',
             ...props.tags
         };
-
         //////////////////////////////////////////////////////////////
-        //* AWS Components with VPC, Subnet, NAT Gateway.
+        //* AWS Components with VPC, Subnet, Gateway.
         //////////////////////////////////////////////////////////////
-        // this.awsVpc = new Vpc(this, 'VpcNetwork', {
-        //     name: props.name ?? "cdktf-network",
-        //     cidr: props.cidr,
-        //     azs: props.azNames,
-        //     privateSubnets: props.privateSubnets,
-        //     publicSubnets: props.publicSubnets,
-        //     intraSubnets: props.intraSubnets,
-        //     enableNatGateway: props.enableNatGateway ?? true,
-        //     singleNatGateway: props.singleNatGateway ?? true,
-        //     enableDnsHostnames: true,
-        //     tags
-        // });
-
         this.awsVpc = new Vpc(this, 'AwsVpc', {
             cidrBlock: props.cidr ?? "10.0.0.0/16",
             enableDnsHostnames: props.enableDnsHostnames ?? true,
@@ -80,6 +66,12 @@ export class AwsVpc extends Resource {
             tags,
         })
         this.vpcId = this.awsVpc.id as string
+
+        this.awsInternetGateway = new InternetGateway(this, 'AwsIgw', {
+            vpcId: this.vpcId,
+            tags,
+            dependsOn: [this.awsVpc]
+        })
 
         // When you create an Amazon EKS cluster, you specify the VPC subnets for your cluster to use.
         // ** Cluster VPC considerations: https://docs.aws.amazon.com/eks/latest/userguide/network_reqs.html
@@ -95,11 +87,12 @@ export class AwsVpc extends Resource {
         }
 
         /////////////////////////////////////////////////////
-        // Define Subnets
+        // Define Subnets, Routing ...
         if (props.publicSubnets) {
             var subnetIds = [];
             var natGatewayIds: string[] = [];
 
+            // Deine public subnets
             for (const { index, subnet } of props.publicSubnets.map((subnet, index) => ({ index, subnet }))) {
                 let r = crypto.createHash('sha1').update(subnet).digest('hex');
 
@@ -109,26 +102,49 @@ export class AwsVpc extends Resource {
                     vpcId: this.vpcId,
                     tags: {
                         ...tags,
-                        'Name': props.name + "-public-" + `\${${props.azs.fqn}.names[${index}]}`
+                        'Name': props.name + "/Public/" + `\${${props.azs.fqn}.names[${index}]}`
                     },
                 });
 
                 // Create NAT Gateway per public subnets
-                if (props.singleNatGateway == false || props.singleNatGateway == undefined) {
-                    this.awsNatEip = new Eip(this, 'AwsNatEip' + r, { vpc: true })
-                    this.awsNatGateway = new NatGateway(this, 'AwsNatGateway' + r, {
-                        allocationId: this.awsNatEip.id!,
-                        subnetId: this.awsPublicSubnet.id!,
-                        dependsOn: [this.awsNatEip, this.awsPublicSubnet]
-                    })
-                }
+                this.awsNatEip = new Eip(this, 'AwsNatEip' + r, { vpc: true })
+                this.awsNatGateway = new NatGateway(this, 'AwsNatGateway' + r, {
+                    allocationId: this.awsNatEip.id!,
+                    subnetId: this.awsPublicSubnet.id!,
+                    dependsOn: [this.awsNatEip, this.awsPublicSubnet]
+                })
 
                 subnetIds.push(this.awsPublicSubnet.id);
                 natGatewayIds.push(this.awsNatGateway!.id as string);
             }
             this.publicSubnetIds = subnetIds
+            this.natGatewayIds = natGatewayIds
+
+            const publicRouteTable = new RouteTable(this, 'AwsPublicRouteTable', {
+                vpcId: this.vpcId,
+                tags: {
+                    ...tags,
+                    'Name': props.name + "/Public"
+                }
+            });
+
+            new Route(this, 'AwsPublicRouteOfIgw', {
+                routeTableId: publicRouteTable.id!,
+                destinationCidrBlock: '0.0.0.0/0',
+                gatewayId: this.awsInternetGateway.id!,
+                dependsOn: [publicRouteTable]
+            });
+
+            this.publicSubnetIds.forEach((subnetId: string, index: number) => {
+                new RouteTableAssociation(this, 'AwsPublicRouteTableAssociation' + index, {
+                    subnetId: subnetId,
+                    routeTableId: publicRouteTable!.id!,
+                    dependsOn: [publicRouteTable]
+                });
+            });
         }
 
+        // Deine private subnets
         if (props.privateSubnets) {
             var subnetIds = [];
 
@@ -142,81 +158,24 @@ export class AwsVpc extends Resource {
                     tags: {
                         ...tags,
                         ...eksTags,
-                        'Name': props.name + "-private-" + `\${${props.azs.fqn}.names[${index}]}`
+                        'Name': props.name + "/Private/" + `\${${props.azs.fqn}.names[${index}]}`
                     },
                 });
 
                 subnetIds.push(this.awsPrivateSubnet.id);
             }
             this.privateSubnetIds = subnetIds
-        }
 
-        if (props.infraSubnets) {
-            var subnetIds = [];
-
-            for (const { index, subnet } of props.infraSubnets.map((subnet, index) => ({ index, subnet }))) {
-                let r = crypto.createHash('sha1').update(subnet).digest('hex');
-
-                this.awsInfraSubnet = new Subnet(this, 'AwsInfraSubnet' + r, {
-                    cidrBlock: subnet,
-                    availabilityZone: `\${${props.azs.fqn}.names[${index}]}`,
-                    vpcId: this.vpcId,
-                    tags: {
-                        ...tags,
-                        ...eksTags,
-                        'Name': props.name + "-infra-" + `\${${props.azs.fqn}.names[${index}]}`
-                    },
-                });
-
-                subnetIds.push(this.awsInfraSubnet.id);
-            }
-            this.infraSubnetIds = subnetIds
-        }
-
-
-        /////////////////////////////////////////////////////
-        // Define Gateways
-        this.awsInternetGateway = new InternetGateway(this, 'AwsIgw', {
-            vpcId: this.vpcId,
-            tags,
-            dependsOn: [this.awsVpc]
-        })
-
-        /////////////////////////////////////////////////////
-        // Define Route Tables ans Routing
-        
-        // Public Routeing
-        if (props.publicSubnets) {
-            this.awsPublicRouteTable = new RouteTable(this, 'AwsPublicRouteTable', {
-                vpcId: this.vpcId,
-                tags: {
-                    ...tags,
-                    'Name': props.name + "-public"
-                }
-            })
-            
-            new Route(this, 'AwsPublicRouteOfIgw', {
-                routeTableId: this.awsPublicRouteTable.id!,
-                destinationCidrBlock: '0.0.0.0/0',
-                gatewayId: this.awsInternetGateway.id!,
-                dependsOn: [this.awsPublicRouteTable]
-            });
-
-            this.publicSubnetIds.map(
-                (subnetId: string, index: number) => {
-                    new RouteTableAssociation(this, 'AwsPublicRouteTableAssociation' + index, {
-                        subnetId: subnetId,
-                        routeTableId: this.awsPublicRouteTable!.id!,
-                        dependsOn: [this.awsPublicRouteTable!]
-                    });
-            });
-        }
-
-        // Private Routeing
-        if (props.privateSubnets) {
             this.awsPrivateRouteTable = natGatewayIds!.map(
-                (gatewayId: string, index: number) => { 
-                    const privateRouteTable = new RouteTable(this, 'AwsPrivateRouteTable' + index, { vpcId: this.vpcId })
+                (gatewayId: string, index: number) => {
+                    const privateRouteTable = new RouteTable(this, 'AwsPrivateRouteTable' + index, {
+                        vpcId: this.vpcId,
+                        tags: {
+                            ...tags,
+                            'Name': props.name + "/Private" + index
+                        }
+                    })
+
                     new Route(this, 'AwsPrivateRouteOfNatGateway' + index, {
                         routeTableId: privateRouteTable.id!,
                         destinationCidrBlock: '0.0.0.0/0',
@@ -233,24 +192,42 @@ export class AwsVpc extends Resource {
             });
         }
 
-        // Infra Routeing
-        if (props.infraSubnets) {
-            this.awsInfraRouteTable = natGatewayIds!.map(
-                (gatewayId: string, index: number) => { 
-                    const infraRouteTable = new RouteTable(this, 'AwsInfraRouteTable' + index, { vpcId: this.vpcId })
-                    new Route(this, 'AwsInfraRouteOfNatGateway' + index, {
-                        routeTableId: infraRouteTable.id!,
-                        destinationCidrBlock: '0.0.0.0/0',
-                        natGatewayId: gatewayId,
-                        dependsOn: [infraRouteTable]
-                    });
-                    new RouteTableAssociation(this, 'AwsInfraRouteTableAssociation' + index, {
-                        subnetId: this.infraSubnetIds[index],
-                        routeTableId: infraRouteTable.id!,
-                        dependsOn: [infraRouteTable]
-                    })
+        // Define isolated subnets
+        if (props.isolatedSubnets) {
+            var subnetIds = [];
 
-                    return infraRouteTable
+            for (const { index, subnet } of props.isolatedSubnets.map((subnet, index) => ({ index, subnet }))) {
+                let r = crypto.createHash('sha1').update(subnet).digest('hex');
+
+                this.awsIsolatedSubnet = new Subnet(this, 'AwsIsolatedSubnet' + r, {
+                    cidrBlock: subnet,
+                    availabilityZone: `\${${props.azs.fqn}.names[${index}]}`,
+                    vpcId: this.vpcId,
+                    tags: {
+                        ...tags,
+                        ...eksTags,
+                        'Name': props.name + "/Isolated/" + `\${${props.azs.fqn}.names[${index}]}`
+                    },
+                });
+
+                subnetIds.push(this.awsIsolatedSubnet.id);
+            }
+            this.isolatedSubnetIds = subnetIds
+
+            const isolatedRouteTable = new RouteTable(this, 'AwsIsolatedRouteTable', {
+                vpcId: this.vpcId,
+                tags: {
+                    ...tags,
+                    'Name': props.name + "/Isolated"
+                }
+            })
+
+            this.isolatedSubnetIds.forEach((subnetId: string, index: number) => {
+                new RouteTableAssociation(this, 'AwsIsolatedRouteTableAssociation' + index, {
+                    subnetId: subnetId,
+                    routeTableId: isolatedRouteTable.id!,
+                    dependsOn: [isolatedRouteTable]
+                });
             });
         };
 
@@ -269,4 +246,3 @@ export class AwsVpc extends Resource {
         new TerraformOutput(this, 'AwsVpcCidr', { value: this.awsVpc.cidrBlock })
     }
 }
-  

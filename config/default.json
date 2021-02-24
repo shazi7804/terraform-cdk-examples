@@ -1,8 +1,14 @@
 {
-    "StackName": "cdktf",
+    "StackName": "cdktfSamples",
     "Tags": {
-        "CreateBy": "cdktf",
-        "SampleFrom": "https://github.com/shazi7804"
+        "CreateBy": "cdktfSamples",
+        "SampleFrom": "https://github.com/shazi7804/cdktf-samples"
+    },
+    "Backend": {
+        "Region": "us-east-1",
+        "Bucket": "terraform-state-remote-us-east-1-381354187112",
+        "Key": "cdktf-samples/terraform.tfstate",
+        "DynamodbTable": "terraform-state-locking-us-east-1-381354187112"
     },
     "Providers": {
         "Aws": {
@@ -17,14 +23,14 @@
                     "10.0.16.0/21",
                     "10.0.24.0/21"
                 ],
-                "infraSubnets": [
+                "isolatedSubnets": [
                     "10.0.32.0/21",
                     "10.0.40.0/21"
                 ],
                 "enableNatGateway": true
             },
             "Eks": {
-                "name": "cdktf",
+                "name": "cdktfSamples-myapp",
                 "instanceType": ["m4.large"],
                 "instanceCount": 1,
                 "version": "1.18"
@@ -42,7 +48,7 @@
                     "10.0.16.0/21",
                     "10.0.24.0/21"
                 ],
-                "infraSubnets": [
+                "isolatedSubnets": [
                     "10.0.32.0/21",
                     "10.0.40.0/21"
                 ],
@@ -50,10 +56,10 @@
                 "enableNatGateway": true
             },
             "Aks": {
-                "name": "cdktf",
+                "name": "cdktfSamples-myapp",
                 "instanceType": ["Standard_D2_v2"],
                 "instanceCount": 1,
-                "dnsPrefix": "cdktf-kubernetes",
+                "dnsPrefix": "cdktf-samples",
                 "version": "1.17.11"
             }
         }

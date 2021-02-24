@@ -24,11 +24,11 @@ export class AwsEksGroups extends Resource {
 
         const nodeGroupDefault = {
             ami_type: props.nodeGroupDefaultAmi ?? "AL2_x86_64",
-            disk_size: props.nodeGroupDefaultDiskSize ?? 30,
+            disk_size: props.nodeGroupDefaultDiskSize ?? 10,
         }
 
         const nodeGroups = {
-            example: {
+            spot: {
                 desired_capacity: 1,
                 max_capacity: 10,
                 min_capacity: 1,
