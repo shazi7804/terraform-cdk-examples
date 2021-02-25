@@ -3,8 +3,7 @@ import { Resource } from 'cdktf';
 import {
     LambdaFunction,
     IamRole,
-    IamRolePolicyAttachment,
-    IamPolicy } from '../../.gen/providers/aws';
+    IamRolePolicyAttachment } from '../../.gen/providers/aws';
 
 export interface AwsLambdaProps {
     readonly name: string;

@@ -1,7 +1,10 @@
 import { Construct } from 'constructs';
 import { App, TerraformStack, S3Backend } from 'cdktf';
 import { AwsProvider, DataAwsAvailabilityZones } from './.gen/providers/aws';
-import { AwsVpc, AwsEksGroups} from './lib/aws';
+import { AwsVpc,
+         AwsIam,
+         AwsEksGroups,
+         AwsEksDeployment } from './lib/aws';
 // import { AzurermProvider, ResourceGroup } from './.gen/providers/azurerm';
 // import { AzureNetwork, AzureAksGroups } from './lib/azure';
 
@@ -43,6 +46,13 @@ class MyStack extends TerraformStack {
         // });
 
         ///////////////////////////////////////////////////////////////////
+        //////////////////       Permissions        ///////////////////////
+        new AwsIam(this, 'awsIam', {
+            name: stackName,
+            region: config.get('Providers.Aws.Regions')[0],
+        });
+
+        ///////////////////////////////////////////////////////////////////
         //////////////////         Network          ///////////////////////
         const awsVpc = new AwsVpc(this, 'awsVpc', {
             name: stackName,
@@ -81,6 +91,7 @@ class MyStack extends TerraformStack {
             instanceCount: config.get('Providers.Aws.Eks.instanceCount'),
             subnetIds: awsVpc.privateSubnetIds,
             vpc: awsVpc.vpcId,
+            environmentType: config.get('Providers.Aws.Eks.instanceCount'),
             tags,
         });
 
@@ -97,6 +108,19 @@ class MyStack extends TerraformStack {
         //     azurePrivateSubnetIds: azureNetwork.azurePrivateSubnetIds,
         //     tags,
         // });
+
+        ///////////////////////////////////////////////////////////////////
+        //////////////////        Deployments       ///////////////////////
+        new AwsEksDeployment(this, 'awsEksDeployment', {
+            name: stackName,
+            region: config.get('Providers.Aws.Regions')[0],
+            sourceRepoName: config.get('Providers.Aws.Eks.Deployment.sourceRepoName'),
+            sourceRepoBranch: config.get('Providers.Aws.Eks.Deployment.sourceRepoBranch'),
+            buildProjectName: config.get('Providers.Aws.Eks.Deployment.buildProjectName'),
+            environmentType: config.get('Providers.Aws.Eks.instanceCount'),
+            tags,
+        })
+ 
     }
 }
 

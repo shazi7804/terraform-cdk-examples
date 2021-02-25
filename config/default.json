@@ -1,7 +1,11 @@
 {
-    "StackName": "cdktfSamples",
+    "StackName": "cdktf-samples",
+    "Environment": {
+        "type": "production",
+        "prefix": ""
+    },
     "Tags": {
-        "CreateBy": "cdktfSamples",
+        "CreateBy": "cdktf-samples",
         "SampleFrom": "https://github.com/shazi7804/cdktf-samples"
     },
     "Backend": {
@@ -30,7 +34,7 @@
                 "enableNatGateway": true
             },
             "Eks": {
-                "name": "cdktfSamples-myapp",
+                "name": "cdktf-samples-myapp",
                 "instanceType": ["m4.large"],
                 "instanceCount": 1,
                 "version": "1.18"
@@ -56,7 +60,7 @@
                 "enableNatGateway": true
             },
             "Aks": {
-                "name": "cdktfSamples-myapp",
+                "name": "cdktf-samples-myapp",
                 "instanceType": ["Standard_D2_v2"],
                 "instanceCount": 1,
                 "dnsPrefix": "cdktf-samples",

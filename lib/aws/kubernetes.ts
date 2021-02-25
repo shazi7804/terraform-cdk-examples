@@ -12,8 +12,9 @@ export interface AwsEksGroupsProps {
     readonly nodeGroupDefaultDiskSize?: number;
     readonly version: string;
     readonly vpc: string;
-    readonly subnetIds: any;
+    readonly subnetIds: string[];
     readonly tags?: any;
+    readonly environmentType: string;
 }
 
 export class AwsEksGroups extends Resource {

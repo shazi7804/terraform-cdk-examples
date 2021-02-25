@@ -1,28 +1,21 @@
 import { Construct } from 'constructs';
 import { Resource } from 'cdktf';
 import {
-    DataAwsCallerIdentity,
     IamRole,
     IamRolePolicyAttachment,
     IamPolicy } from '../../.gen/providers/aws';
 
 export interface AwsIamProps {
     readonly name: string;
-    readonly eksClusterName: string;
-    readonly subnetIds: string[];
-    readonly vpcId: string;
-    readonly prefix?: string;
-    readonly environmentType: string;
     readonly region: string;
-    readonly oidcProviderArn?: string;
-    readonly oidcProviderUrl?: string;
+    readonly prefix?: string;
 }
 
 export class AwsIam extends Resource {
     constructor(scope: Construct, name: string, props: AwsIamProps ) {
         super(scope, name);
 
-        const current = new DataAwsCallerIdentity(this, 'current');
+        // const current = new DataAwsCallerIdentity(this, 'current');
 
         const clusterAutoscalerPolicy = new IamPolicy(this, 'ClusterAutoscalerPolicy', {
             name: 'cluster-autoscaler',
@@ -53,7 +46,7 @@ export class AwsIam extends Resource {
                     Principal: {
                         Service: "eks.amazonaws.com"
                     },
-                    Action: "sts:AssumeRoleWithWebIdentity",
+                    Action: "sts:AssumeRole",
                     Sid: ""
                 }]
             })

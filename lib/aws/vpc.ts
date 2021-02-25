@@ -234,7 +234,7 @@ export class AwsVpc extends Resource {
         /////////////////////////////////////////////////////
         // Options function
         if (props.cidrSecondary) {
-            this.awsVpcCidrSecondary = new VpcIpv4CidrBlockAssociation(this, 'AwsVpcCidrSecondary', {
+            this.awsVpcCidrSecondary = new VpcIpv4CidrBlockAssociation(this, 'AwsVpcSecondaryCidr', {
                 cidrBlock: props.cidrSecondary,
                 vpcId: this.awsVpc.id as string,
             })
