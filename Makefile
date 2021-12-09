@@ -1,13 +1,9 @@
 .PHONY: plan
 
-deploy:
+deploy-eks:
 	cdktf synth
-	cd cdktf.out/ && terraform apply
+	cd cdktf.out/stacks/aws-eks/ && terraform apply
 
-plan:
+plan-eks:
 	cdktf synth
-	cd cdktf.out/ && terraform plan
-
-init:
-	cdktf synth
-	cd cdktf.out/ && terraform init
+	cd cdktf.out/stacks/aws-eks/ && terraform plan

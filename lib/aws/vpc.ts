@@ -75,16 +75,8 @@ export class AwsVpc extends Resource {
 
         // When you create an Amazon EKS cluster, you specify the VPC subnets for your cluster to use.
         // ** Cluster VPC considerations: https://docs.aws.amazon.com/eks/latest/userguide/network_reqs.html
-        var eksTags: any = {}
-        if (props.eksClusterName) {
-            eksTags = {
-                'kubernetes.io/role/internal-elb': '1',
-                'kubernetes.io/role/elb': '1'
-            };
-
-            var eksClusterName: string = 'kubernetes.io/cluster/' + props.eksClusterName;
-            eksTags[eksClusterName!] = 'shared';
-        }
+        var eksPublicTags: any = { 'kubernetes.io/role/elb': '1' }
+        var eksPrivateTags: any = { 'kubernetes.io/role/internal-elb': '1' }
 
         /////////////////////////////////////////////////////
         // Define Subnets, Routing ...
@@ -102,6 +94,7 @@ export class AwsVpc extends Resource {
                     vpcId: this.vpcId,
                     tags: {
                         ...tags,
+                        ...eksPublicTags,
                         'Name': props.name + "/Public/" + `\${${props.azs.fqn}.names[${index}]}`
                     },
                 });
@@ -157,7 +150,7 @@ export class AwsVpc extends Resource {
                     vpcId: this.vpcId,
                     tags: {
                         ...tags,
-                        ...eksTags,
+                        ...eksPrivateTags,
                         'Name': props.name + "/Private/" + `\${${props.azs.fqn}.names[${index}]}`
                     },
                 });
@@ -205,7 +198,6 @@ export class AwsVpc extends Resource {
                     vpcId: this.vpcId,
                     tags: {
                         ...tags,
-                        ...eksTags,
                         'Name': props.name + "/Isolated/" + `\${${props.azs.fqn}.names[${index}]}`
                     },
                 });

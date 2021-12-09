@@ -11,7 +11,6 @@
     "Backend": {
         "Region": "us-east-1",
         "Bucket": "terraform-state-remote-us-east-1-381354187112",
-        "Key": "cdktf-samples/terraform.tfstate",
         "DynamodbTable": "terraform-state-locking-us-east-1-381354187112"
     },
     "Providers": {
@@ -37,7 +36,7 @@
                 "name": "cdktf-samples-myapp",
                 "instanceType": ["m4.large"],
                 "instanceCount": 1,
-                "version": "1.18"
+                "version": "1.19"
             }
         },
         "Azure": {

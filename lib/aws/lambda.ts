@@ -47,5 +47,6 @@ export class AwsLambda extends Resource {
             s3Bucket: 'terraform-serverless-sample-us-east-1-381354187112',
             s3Key: 'v1.0.0/substract.zip',
         });
+
     }
 }
